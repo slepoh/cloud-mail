@@ -25,15 +25,16 @@ export default {
 	},
 	email: email,
 	async scheduled(c, env, ctx) {
-		if (c.cron === '*/30 * * * *') {
-			await analysisService.refreshEchartsCache({ env })
-			return;
-		}
-
-		await verifyRecordService.clearRecord({ env })
-		await userService.resetDaySendCount({ env })
-		await emailService.completeReceiveAll({ env })
-		await oauthService.clearNoBindOathUser({ env })
+		// 每 30 分钟：刷新分析缓存
 		await analysisService.refreshEchartsCache({ env })
+		
+		// 每 30 分钟检查是否需要执行每日任务（UTC 时间每天 16 点是北京时间 0 点）
+		const now = new Date()
+		if (now.getUTCHours() === 16 && now.getUTCMinutes() < 30) {
+			await verifyRecordService.clearRecord({ env })
+			await userService.resetDaySendCount({ env })
+			await emailService.completeReceiveAll({ env })
+			await oauthService.clearNoBindOathUser({ env })
+		}
 	},
 };
